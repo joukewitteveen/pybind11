@@ -9,16 +9,59 @@ Available wrappers
 All major Python types are available as thin C++ wrapper classes. These
 can also be used as function parameters -- see :ref:`python_objects_as_args`.
 
-Available types include :class:`handle`, :class:`object`, :class:`bool_`,
-:class:`int_`, :class:`float_`, :class:`str`, :class:`bytes`, :class:`tuple`,
-:class:`list`, :class:`dict`, :class:`slice`, :class:`none`, :class:`capsule`,
-:class:`iterable`, :class:`iterator`, :class:`function`, :class:`buffer`,
-:class:`array`, and :class:`array_t`.
+Available types include :class:`handle`, :class:`object`, :class:`namespace_`,
+:class:`bool_`, :class:`int_`, :class:`float_`, :class:`str`, :class:`bytes`,
+:class:`tuple`, :class:`list`, :class:`dict`, :class:`slice`, :class:`none`,
+:class:`capsule`, :class:`iterable`, :class:`iterator`, :class:`function`,
+:class:`buffer`, :class:`array`, and :class:`array_t`.
 
 .. warning::
 
     Be sure to review the :ref:`pytypes_gotchas` before using this heavily in
     your C++ API.
+
+.. _instantiating_compound_types:
+
+Instantiating compound Python types from C++
+============================================
+
+A tuple of python objects can be instantiated using :func:`py::make_tuple`:
+
+.. code-block:: cpp
+
+    py::tuple tup = py::make_tuple(42, py::none(), "spam");
+
+Each element is converted to a supported Python type.
+
+Dictionaries can be initialized in the :class:`dict` constructor:
+
+.. code-block:: cpp
+
+    using namespace pybind11::literals; // to bring in the `_a` literal
+    py::dict d("spam"_a=py::none(), "eggs"_a=42);
+
+A `simple namespace`_ can be instantiated in the :class:`namespace_`
+constructor:
+
+.. code-block:: cpp
+
+    using namespace pybind11::literals; // to bring in the `_a` literal
+    py::namespace_ ns("spam"_a=py::none(), "eggs"_a=42);
+
+The keys in the arguments to the :class:`namespace_` constructor become the
+attribute names in the resulting namespace. Attributes on a namespace can be
+modified with the :func:`py::delattr`, :func:`py::getattr`, and
+:func:`py::setattr` functions. Namespaces can be useful as stand-ins for class
+instances.
+
+.. note::
+
+    The ``namespace_`` type is not available in Python 2.
+
+.. versionchanged:: 2.7
+    ``namespace_`` added.
+
+.. _simple namespace: https://docs.python.org/3/library/types.html#types.SimpleNamespace
 
 .. _casting_back_and_forth:
 
@@ -30,7 +73,7 @@ types to Python, which can be done using :func:`py::cast`:
 
 .. code-block:: cpp
 
-    MyClass *cls = ..;
+    MyClass *cls = ...;
     py::object obj = py::cast(cls);
 
 The reverse direction uses the following syntax:

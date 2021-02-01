@@ -763,6 +763,17 @@ inline bool PyUnicode_Check_Permissive(PyObject *o) { return PyUnicode_Check(o) 
 #define PYBIND11_STR_CHECK_FUN PyUnicode_Check
 #endif
 
+#if PY_MAJOR_VERSION >= 3
+inline bool PyNamespace_Check(PyObject *o) {
+#if !defined(PYPY_VERSION)
+    auto type = (PyObject *) &_PyNamespace_Type;
+#else
+    auto type = module_::import("types").attr("SimpleNamespace");
+#endif
+    return isinstance(o, type);
+}
+#endif
+
 inline bool PyStaticMethod_Check(PyObject *o) { return o->ob_type == &PyStaticMethod_Type; }
 
 class kwargs_proxy : public handle {
@@ -1325,6 +1336,18 @@ private:
         return PyObject_CallFunctionObjArgs((PyObject *) &PyDict_Type, op, nullptr);
     }
 };
+
+#if PY_MAJOR_VERSION >= 3
+class namespace_ : public object {
+public:
+    PYBIND11_OBJECT(namespace_, object, detail::PyNamespace_Check)
+    template <typename... Args,
+              typename = detail::enable_if_t<args_are_all_keyword_or_ds<Args...>()>>
+    explicit namespace_(Args&&... args_) : object(_PyNamespace_New(dict(std::forward<Args>(args_)...).ptr()), stolen_t{}) {
+        if (!m_ptr) pybind11_fail("Could not allocate namespace object!");
+    }
+};
+#endif
 
 class sequence : public object {
 public:
